@@ -1,0 +1,33 @@
+---
+- name: prepare environment
+  hosts: foo
+  gather_facts: no
+  vars:
+    - code_path: /opt/app
+    - api_name: simple_api
+
+  tasks:
+      
+    - name: apt-get update
+      shell: apt-get update
+      sudo: yes
+    
+    - name: build-essential
+      apt: pkg=build-essential state=installed update_cache=true
+      apt: pkg=libssl-dev state=installed update_cache=true
+      sudo: yes
+
+    - name: install via ppa
+      shell: curl -sL https://deb.nodesource.com/setup | sudo bash -
+      register: curl_process
+
+    - name: install nodejs
+      apt: pkg=nodejs state=installed update_cache=true
+      register: nodejs_install
+      when: curl_process|success
+      sudo: yes
+
+    - name: git clone
+      shell: mkdir -p {{ code_path }}/{{ simple_api }} && cd {{ code_path }} && git clone https://github.com/chatwing/sample-api.git {{ simple_api }}
+      when: nodejs_install|success
+

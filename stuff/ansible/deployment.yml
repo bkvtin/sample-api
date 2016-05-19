@@ -1,0 +1,31 @@
+---
+# Deploy simple_api
+
+- hosts: foo
+  sudo: no
+  gather_facts: no
+  vars:
+    - CODE: /opt/data/simple_api/
+  vars_prompt:
+    SURE: "Are u sure to deploy simple_api service ?"
+    RESTART: "Require to restart ?"
+
+  tasks:
+    - fail: You do not agree to deploy!
+      when: SURE != 'yes'
+
+    - name: Get current git commit if need to revert just in case
+      shell: chdir={{ CODE }} git log | head -n1
+
+    - name: git force pull
+      shell: cd {{ CODE }} && git fetch --all && git reset --hard origin/master
+      register: check_npm
+
+    - name: npm install
+      npm: path={{ CODE }} state=present
+      sudo: no
+
+    - name: restart the simple_api service
+      when: RESTART == 'yes'
+      service: name=simple_api state=restarted
+      sudo: yes
